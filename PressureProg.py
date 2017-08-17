@@ -12,7 +12,7 @@ How to embed matplotib in pyqt - for Dummies
 http://stackoverflow.com/questions/12459811/how-to-embed-matplotib-in-pyqt-for-dummies
  
 """
-import sys
+import sys, os
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
@@ -24,129 +24,119 @@ from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as Navigatio
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 
 from PyQt5.QtWidgets import (QWidget, QApplication, QVBoxLayout, QPushButton, QMenuBar, QMenu,
-QAction,QMainWindow, QFileDialog,QTextEdit)
-from PyQt5.QtGui import QIcon
+QAction,QFileDialog)
 
+ 
 
-class OpenDialog(QMainWindow):
+class Window(QWidget):
+    q=0
+    allListsx=list()
+    allListsy=list()
+    xyes=list()
+    cyes=list()
+    yyes=list()
+    zyes=list()
+    
+    
+    fileLoc=list() #keeps the names of selected files
+    temper=list() #keeps temperature values
+    meteoList= list() #keeps list of meteo data out of M files
+    slrList=list() #keeps list of slr data 
         
-    fileLoc=list()
-    fileLoc1=list()
-    z=0
-    temper=list()
-   
-    def __init__(self):
-        super().__init__()
         
-        self.initUI()
-        
-        
-    def initUI(self):      
-        
-        self.textEdit = QTextEdit()
-        self.setCentralWidget(self.textEdit)
-        self.statusBar()
-        
+    def __init__(self, parent=None):
+        super(Window, self).__init__(parent)
+
+        self.figure = plt.figure()
+        self.canvas = FigureCanvas(self.figure)
+ 
+        self.resize(1300,800)
+        self.move(0,100)
        
-        openFile = QAction(QIcon('open.png'), 'Open', self)
-        openFile.setShortcut('Ctrl+O')
-        openFile.setStatusTip('Open new File')
-        openFile.triggered.connect(self.showDialog)
+        self.toolbar = NavigationToolbar(self.canvas, self)
         
-        done = QAction( 'Done', self)
-        done.setShortcut('Ctrl+D')
-        done.setStatusTip('Done and close')
-        done.triggered.connect(self.close)
-        done.triggered.connect(self.done)
-        #done.triggered.connect(self.interpol)
+        
+        self.menuBar = QMenuBar(self)
+        self.menuOpen = QMenu("File", self.menuBar)
+        self.actionOpen = QAction('Open', self)
+        self.actionOpen.triggered.connect(self.open_clicked)
+        self.actionQuit = QAction('Quit', self)
+        self.actionQuit.triggered.connect(self.close)
+        
+        self.menuOpen.addAction(self.actionOpen)
+        self.menuOpen.addAction(self.actionQuit)
+        self.menuBar.addAction(self.menuOpen.menuAction())
+        
 
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(openFile)    
-        fileMenu.addAction(done)
-       
+        # Just some button 
+        self.button = QPushButton('Plot')
+        self.button.clicked.connect(self.plott)
+        self.button1 = QPushButton('Reset')
+        self.button1.clicked.connect(self.resetA)
+ 
+        # set the layout
+        layout = QVBoxLayout()
+        layout.addWidget(self.toolbar)
+        layout.addWidget(self.canvas)
+        layout.addWidget(self.button)
+        self.setLayout(layout)
+ 
+    
+    def open_clicked(self):
         
-        self.setGeometry(300, 300, 350, 300)
-        self.setWindowTitle('File dialog')
-        self.show()
-
-   
-        
-    def showDialog(self):
-       
+        #opens file explorer
         fname = QFileDialog.getOpenFileNames(self, 'Open file', '/home')
         fname1=fname[0]
-        leng1=len(fname1)
-        e=0
-        for e in range(0,leng1):
-            name=fname1[e]
-            self.textEdit.append(name)
-            self.fileLoc.append(name)
-            self.fileLoc1.append(name)
-            e=e+1
-    
+        #appends file names to fileLocation list and text window
+        for e in range(0,len(fname1)):#varbūt šo nevajag ja izmanto vienā vietā
+            self.fileLoc.append(fname1[e])#šo arī
+            
 
-
-    def done(self):
-        #print(self.fileLoc)
-        
+     
+        #open all selected files 
         for i in range(0,len(self.fileLoc)):
+            #to check the name of file
             file=self.fileLoc[i]
             fileName=file.split('/')
             fileName1=fileName[-1]
-            i=i+1
+            #i=i+1
+            #to open and read M file
             if "M" in fileName1:
                 f = open(fileName1, 'r')
                 my_list = [line.split(' ') for line in f.readlines()]
                 f.close()
                 
-               
-                with open("temper"+fileName1,'w',encoding = 'utf-8') as thefile:
-                    for i in range(0,len(my_list)):
-                        date=str(my_list[i][0])+"/"+str(my_list[i][1])+"/"+str(my_list[i][2])+" "+str(my_list[i][3])+":"+str(my_list[i][4])
-                       
-                        dat=my_list[i][-3]  
-                        thefile.write(str(date))
-                        thefile.write(',')
-                        thefile.write(str(dat))
-                        thefile.write("\n")
+                #to put in list temperature values
+                for i in range(0,len(my_list)):
+                    date=str(my_list[i][0])+"/"+str(my_list[i][1])+"/"+str(my_list[i][2])+" "+str(my_list[i][3])+":"+str(my_list[i][4])
+                    dat=my_list[i][-3]  
+                    self.temper.append(str(date)+","+str(dat)+"\n")
                     
-                    
-                    
+                
+                #take the right value and calculate it to pascals 
                 for val in range(0,len(my_list)):
     
-                    data=my_list[val][-1]
-                    data1=float(data)
-                    data2=data1*133.322387415
-                    data3=int(data2)
-                    data4=str(data3)
-                    my_list[val][5]=data4
-                    del my_list[val][6:8]
-
-                print(self.temper)  
-
+                    data=float(my_list[val][-1])
+                    data2=str(int(data*133.322387415))
+                    my_list[val][5]=data2
+                    del my_list[val][6:9]
+                    
                 
-                numbers2=list(range(0,len(my_list)))
-                
-                file1=str("Meteo")+str(fileName1)
-                self.writeFile(file1,numbers2,my_list)
-                
-                
+                #append meteo data from one file to global list
+                self.meteoList.append(my_list)
+                       
+            #to read slr meteo files
             else:
-                f = open(fileName1, 'r')
+                f = open(fileName1, 'r') #var uztaisit def
                 my_list1 = [line.split(' ') for line in f.readlines()]
                 f.close()
-                lenght=len(my_list1)
-                numbers=list(range(0,lenght))
-                #numbers1=[0,2,3,4,6,7]
-                for val in numbers:
+                
+                #take the right value calculate it to pascals, move to right places
+                for val in range(0,len(my_list1)):
     
-                    data=my_list1[val][0]
-                    data1=float(data)
-                    data2=data1*100
-                    data3=int(data2)
-                    data4=str(data3)
-                    my_list1[val][0]=data4
+                    data=float(my_list1[val][0])
+                    data2=str(int(data*100))
+                    my_list1[val][0]=data2
 
                     last=my_list1[val][-1]
                     last1=last.strip()
@@ -164,123 +154,18 @@ class OpenDialog(QMainWindow):
                     my_list1[val][2]=num4
                     my_list1[val][1]=num3
                     my_list1[val][0]=num2
-                
-                file1=str("SLR")+str(fileName1)
-                self.writeFile(file1,numbers,my_list1)
-                
-    
-    
-    
-    def writeFile(self,file,numbers,my_list):
-        
-        with open(file,'w',encoding = 'utf-8') as thefile:
-            for val in numbers:
-                thefile.write(my_list[val][0])
-                thefile.write('/')
-                thefile.write(my_list[val][1])
-                thefile.write('/')
-                thefile.write(my_list[val][2])
-                thefile.write(' ')
-                thefile.write(my_list[val][3])
-                thefile.write(':')
-                thefile.write(my_list[val][4])
-                thefile.write(',')
-                thefile.write(my_list[val][5])
-                thefile.write("\n")
-        
-       # leng=len(self.fileLoc)
-       # for i in range(0,leng):
-        
-        
-        fileNa=self.fileLoc[self.z]
-        fileName=fileNa.split('/')
-        fileName[-1]=file 
-        fileName2='/'.join(fileName)
-        self.fileLoc1[self.z]=fileName2
-        
-       # print(self.fileLoc)
-            
-        self.z=self.z+1
-        
+                    del my_list1[val][6:8]
+               
+                self.slrList.append(my_list1)
 
-
-class Window(QWidget):
-    q=0
-    allListsx=list()
-    allListsy=list()
-    xyes=list()
-    cyes=list()
-    yyes=list()
-    zyes=list()
+        print(self.meteoList)
+        print("----")
+        print(self.slrList)
     
-    def open_clicked(self):
-        self.dialog_02 = OpenDialog()
-        self.dialog_02.show()
-        self.dialog_02.raise_()
+    def resetA(self):
+        #Add all things that need to be reseted
         
-
-        
-    def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
-
-        self.figure = plt.figure()
-        self.canvas = FigureCanvas(self.figure)
- 
-        self.resize(1300,900)
-         
-       
-        self.toolbar = NavigationToolbar(self.canvas, self)
-        
-        
-        self.menuBar = QMenuBar(self)
-        self.menuOpen = QMenu("File", self.menuBar)
-        self.actionOpen = QAction('Open', self)
-        self.actionOpen.triggered.connect(self.open_clicked)
-        self.actionQuit = QAction('Quit', self)
-        self.actionQuit.triggered.connect(self.close)
-        
-        self.menuOpen.addAction(self.actionOpen)
-        self.menuOpen.addAction(self.actionQuit)
-        self.menuBar.addAction(self.menuOpen.menuAction())
-        
-        
-
-        
-        # Just some button 
-        self.button = QPushButton('Plot')
-        self.button.clicked.connect(self.plott)
- 
-        #self.button1 = QPushButton('Reset')
-        #self.button1.clicked.connect(self.reset)
-         
-        #self.button2 = QPushButton('Pan')
-        #self.button2.clicked.connect(self.pan)
-         
-        #self.button3 = QPushButton('Home')
-       # self.button3.clicked.connect(self.home)
-        
- 
-        # set the layout
-        layout = QVBoxLayout()
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.canvas)
-        layout.addWidget(self.button)
-        #layout.addWidget(self.button1)
-        #layout.addWidget(self.button2)
-        #layout.addWidget(self.button3)
-        self.setLayout(layout)
- 
-    #def reset(self):
-        
-    
-        
-        #self.figure.clf()
-        
-        
-    #def zoom(self):
-     #   self.toolbar.zoom()
-    #def pan(self):
-     #   self.toolbar.pan()
+        return
     
     def plot1(self,name,color,label1):
         
@@ -313,6 +198,12 @@ class Window(QWidget):
         
         
     def plott(self):
+        import SmallMain
+        #small = SmallMain.Window()
+        self.dialog_04 = SmallMain.Window()
+        self.dialog_04.show()
+        self.dialog_04.raise_()
+        
         
         colors=['b','g','r','c','m','y','k']
         colLen=len(colors)
@@ -341,6 +232,8 @@ class Window(QWidget):
             i=i+1
         self.xycv()
         self.yDiff()
+        
+        
             #os.remove(file)
             
     def yDiff(self):
