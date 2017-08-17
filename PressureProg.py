@@ -32,16 +32,15 @@ class Window(QWidget):
     q=0
     allListsx=list()
     allListsy=list()
-    xyes=list()
-    cyes=list()
-    yyes=list()
-    zyes=list()
+    xy=list()
+    cv=list()
+    
     
     
     fileLoc=list() #keeps the names of selected files
     temper=list() #keeps temperature values
-    meteoList= list() #keeps list of meteo data out of M files
-    slrList=list() #keeps list of slr data 
+    meteoList= list() #keeps list of meteo data 
+    
         
         
     def __init__(self, parent=None):
@@ -70,7 +69,7 @@ class Window(QWidget):
 
         # Just some button 
         self.button = QPushButton('Plot')
-        self.button.clicked.connect(self.plott)
+        self.button.clicked.connect(self.plotOrigin)
         self.button1 = QPushButton('Reset')
         self.button1.clicked.connect(self.resetA)
  
@@ -156,86 +155,94 @@ class Window(QWidget):
                     my_list1[val][0]=num2
                     del my_list1[val][6:8]
                
-                self.slrList.append(my_list1)
+                self.meteoList.append(my_list1)
 
-        print(self.meteoList)
-        print("----")
-        print(self.slrList)
+        #print(self.meteoList)
+        #print("----")
+        #print(self.slrList)
     
     def resetA(self):
         #Add all things that need to be reseted
         
         return
     
-    def plot1(self,name,color,label1):
-        
+    
+    def plotOne(self,color,label1,i):
         y = []
         t = []
-        readFile = open(name, 'r')
-        sepFile = readFile.read().split('\n')
-        readFile.close()
-        for idx, plotPair in enumerate(sepFile):
-            if plotPair in '. ':
-                # skip. or space
-                continue
-            if idx >= 0:  
-                xAndY = plotPair.split(',')
-                time_string = xAndY[0]
+        
+        #takes everything from meteoList and convert to right format
+        for idx in range(0,len(self.meteoList[i])):
+                time_string = str(self.meteoList[i][idx][0])+"/"+str(self.meteoList[i][idx][1])+"/"+str(self.meteoList[i][idx][2])+" "+str(self.meteoList[i][idx][3])+":"+str(self.meteoList[i][idx][4])
                 time_string1 = datetime.strptime(time_string, '%Y/%m/%d %H:%M')
                 t.append(time_string1)
-                y.append(float(xAndY[1]))
-    
+                y.append(float(self.meteoList[i][idx][5]))
+                    
         self.ax = self.figure.add_subplot(111)
         self.figure.autofmt_xdate(rotation=45)
         
         self.ax.plot(t, y, color, label=label1)
         self.ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M'))
         self.ax.set_ylabel('Pressure (Pa)', fontSize=16)
-        #first_legend = plt.legend( loc=2,prop={'size':18})
-        #self.ax = plt.gca().add_artist(first_legend)
+        
         
         self.canvas.draw()
+    
+   
+        
+    def plotOrigin(self):
         
         
-    def plott(self):
         import SmallMain
         #small = SmallMain.Window()
         self.dialog_04 = SmallMain.Window()
         self.dialog_04.show()
         self.dialog_04.raise_()
         
-        
+        #generate some graph colors
         colors=['b','g','r','c','m','y','k']
-        colLen=len(colors)
-        colLen1=colLen-1
-        
-        leng=len(OpenDialog.fileLoc1)
-        #print(leng)
-        for i in range(0,leng):
-            if self.q>=colLen1:
+      
+        #plot all data in meteoList
+        for i in range(0,len(self.fileLoc)):
+            if self.q>=(len(colors)):
                 self.q=0
-                #print(self.q)
+                
             else:
                 self.q=self.q+1
-                #print(self.q)
-            file=OpenDialog.fileLoc1[i]
+            
+            #get file name for label
+            file=self.fileLoc[i]
             fileName=file.split('/')
             fileName1=fileName[-1]
-            self.plot1(file,colors[self.q],fileName1) 
             
-            x,y=self.interpol(file)
+            #call a function that plots everythong one by one
+            self.plotOne(colors[self.q],fileName1,i) 
+   
+            #get vales from changeToSec
+            x,y=self.changeToSec(i)
+            #put new data into lists
             self.allListsx.append(x)
             self.allListsy.append(y)
         
             
             
-            i=i+1
-        self.xycv()
-        self.yDiff()
-        
-        
-            #os.remove(file)
             
+        self.getSimVal()
+        self.yDiff()
+    
+    def splitVal(self, lis,i):
+        x=[]
+        y=[]
+        
+        
+        for j in range(0,len(lis[i])):
+            val1=lis[i][j]
+            val = val1.split(',')
+            x.append(val[0])
+            y.append(val[1])
+        
+        return x,y
+    
     def yDiff(self):
         x4=[]
         y4=[]
@@ -245,36 +252,23 @@ class Window(QWidget):
         y5=[]
         c5=[]
         v5=[]
+        x6=[]
+        y6=[]
+        c6=[]
+        v6=[]
         
+        for i in range(0,len(self.xy)):
         
-        readFile = open("xany.txt", 'r')
-        sepFile = readFile.read().split('\n')
-        readFile.close()
-        for idx, plotPair in enumerate(sepFile):
-            if plotPair in '. ':
-                # skip. or space
-                continue
-            if idx >= 0:  
-                xAndY = plotPair.split(',')
-                x3 = xAndY[0]
-                y3= xAndY[1]
-                x4.append(x3)
-                y4.append(y3)
-        
-        readFile = open("canv.txt", 'r')
-        sepFile = readFile.read().split('\n')
-        readFile.close()
-        for idx, plotPair in enumerate(sepFile):
-            if plotPair in '. ':
-                # skip. or space
-                continue
-            if idx >= 0:  
-                xAndY = plotPair.split(',')
-                c3 = xAndY[0]
-                v3= xAndY[1]
-                c4.append(c3)
-                v4.append(v3)     
-  
+            x4,y4=self.splitVal(self.xy,i)
+            c4,v4=self.splitVal(self.cv,i)
+            x6.append(x4)
+            y6.append(y4)
+            c6.append(c4)
+            v6.append(v4)
+            
+        print(len(x6))
+        print("-----")
+        #neraksta pareizās atšķirības failā
         
         x4 = [int(i) for i in x4]
         y4 = [int(i) for i in y4]
@@ -350,80 +344,57 @@ class Window(QWidget):
                     thefile.write("\n")
         
         #return
-
-    
-    def xycv(self):
-        ze=0
+        
+        
+    def getSimVal(self):
+        
         x2=0
         c2=0
-        with open("xany.txt",'w',encoding = 'utf-8') as filexy, open("canv.txt",'w',encoding = 'utf-8') as filecv:
-            if len(self.allListsx)>1:
-                for ze in range(0,len(self.allListsx)-1):
-                    x=self.allListsx[ze]
-                    c=self.allListsx[ze+1]
-                    y=self.allListsy[ze]
-                    v=self.allListsy[ze+1]
-                    #print(self.allListsx)
-                    #print(c)
-                    for i in range(0,len(x)-1):
-                        x1=x[i]
-                        y1=y[i]
-                        #print(str(x[i])+"x-"+str(i))
-                        for j in range(0,len(c)-1):
-                            c1=c[j]
-                            v1=v[j]
-                            #print(str(c[i])+"c-"+str(i))
-                            if (x1-5)<=c1<=(x1+5):
-                                if(c1!=c2):
-                                    filecv.write(str(c1)+","+str(v1))
-                                    filecv.write("\n")
-                                    c2=c1
-                                if(x1!=x2):
-                                    filexy.write(str(x1)+","+str(y1))
-                                    filexy.write("\n")
-                                    x2=x1
-                                        
-                                #print("Yes")
-                                #print(x1)
-                                #print(c1)
-                                #self.cyes.append(j)
-                                #self.xyes.append(i) 
-                        j=j+1
+        listxy=list()
+        listcv=list()
+        
+        #goes through every list in allListsx (y) and compares if the date in seconds is the same 
+        if len(self.allListsx)>1:
+            for ze in range(0,len(self.allListsx)):
+                for zr in range(0,len(self.allListsx)):
+                    print(len(self.allListsx))
                     
-            
-                    i=i+1
-    
+                    if ze+zr<len(self.allListsx):
+                       
+                        x=self.allListsx[ze]
+                        c=self.allListsx[ze+zr]
+                        y=self.allListsy[ze]
+                        v=self.allListsy[ze+zr]
+                        for i in range(0,len(x)-1):
+                            x1=x[i]
+                            y1=y[i]
+                            for j in range(0,len(c)-1):
+                                c1=c[j]
+                                v1=v[j]
+                                if (x1-5)<=c1<=(x1+5):
+                                    if(c1!=c2):
+                                        listcv.append(str(c1)+","+str(v1))
+                                        c2=c1
+                                    if(x1!=x2):
+                                        listxy.append(str(x1)+","+str(y1))
+                                        x2=x1
+                                
+                    self.cv.append(listcv)
+                    self.xy.append(listxy)
         
+    def changeToSec(self,i):
         
-        
-    def interpol(self,file):
-        
-        #import numpy as np
-        from datetime import datetime
-        #from scipy.interpolate import splrep, splev
-        #print(file)
         h=[]
         z=[]
-        y = []
+        y=[]
         
-
+        #takes everything from meteoList and convert to right format
+        for idx in range(0,len(self.meteoList[i])):
+                time_string = str(self.meteoList[i][idx][0])+"/"+str(self.meteoList[i][idx][1])+"/"+str(self.meteoList[i][idx][2])+" "+str(self.meteoList[i][idx][3])+":"+str(self.meteoList[i][idx][4])
+                z.append(time_string)
+                y.append(float(self.meteoList[i][idx][5]))
      
-        readFile = open(file, 'r')
-        sepFile = readFile.read().split('\n')
-        readFile.close()
-        #print(sepFile)
-        for idx, plotPair in enumerate(sepFile):
-            if plotPair in '. ':
-                # skip. or space
-                continue
-            if idx >= 0:  
-                xAndY = plotPair.split(',')
-                time_string = xAndY[0]
-                z.append(time_string)    
-                y.append(xAndY[1])
-                
-
-
+        #convert every date into seconds from 01.01.2017
         for i in range(len(z)):
             s2 = z[i]
             fmt = '%Y/%m/%d %H:%M'
@@ -434,16 +405,22 @@ class Window(QWidget):
             d5=d4[0]*24*60+d4[1]*60+d4[2]
             h.append(d5)
             
-
+        #changes every y value to type int
         y = [int(i) for i in y]
-        #x = np.array(h)
-        #y = np.array(y)
         
-
-        #print (np.interp(266872, x, y))
-        #tck = splrep(x, y)
-        #print(splev(266872, tck))
         return h,y
+
+
+        
+    
+
+    
+    
+    
+        
+        
+        
+    
  
 if __name__ == '__main__':
     app = QApplication(sys.argv)
