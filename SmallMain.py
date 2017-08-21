@@ -17,6 +17,7 @@ class OpenFinalDialog(QDialog):
         super(OpenFinalDialog, self).__init__(parent)
         
         self.resize(1000,600)
+        self.move(900,500)
         # a figure instance to plot on
         self.figure = plt.figure()
 
@@ -57,7 +58,6 @@ class OpenFinalDialog(QDialog):
                 y.append(xAndY[1])
                    
 
-     
 
         ax = self.figure.add_subplot(111)
         ax.plot(t, y,"o")  
@@ -69,75 +69,15 @@ class OpenFinalDialog(QDialog):
         at=np.array(y)
         
         ax.plot(ar, np.poly1d(np.polyfit(ar, at, 1))(ar))
-        #m, b = np.polyfit(ar, at, 1)
-        #X_plot = np.linspace(ax.get_xlim()[0],ax.get_xlim()[1],100)
-        #ax.plot(X_plot, m*X_plot + b, '-')
+        
         # refresh canvas
         self.canvas.draw()
         
      
 
-class OpenDialog(QMainWindow):
-        
-    fileLoc=list()
-    fileLoc1=list()
-    z=0
-   
-    def __init__(self):
-        super().__init__()
-        
-        self.initUI()
         
         
-    def initUI(self):      
-        
-        self.textEdit = QTextEdit()
-        self.setCentralWidget(self.textEdit)
-        self.statusBar()
-        
-       
-        openFile = QAction(QIcon('open.png'), 'Open', self)
-        openFile.setShortcut('Ctrl+O')
-        openFile.setStatusTip('Open new File')
-        openFile.triggered.connect(self.showDialog)
-        
-        done = QAction( 'Done', self)
-        done.setShortcut('Ctrl+D')
-        done.setStatusTip('Done and close')
-        done.triggered.connect(self.close)
-        #done.triggered.connect(self.done)
-        #done.triggered.connect(self.interpol)
-
-        menubar = self.menuBar()
-        fileMenu = menubar.addMenu('&File')
-        fileMenu.addAction(openFile)    
-        fileMenu.addAction(done)
-       
-        
-        self.setGeometry(300, 300, 350, 300)
-        self.setWindowTitle('File dialog')
-        self.show()
-
-   
-        
-    def showDialog(self):
-       
-        fname = QFileDialog.getOpenFileNames(self, 'Open file', '/home')
-        fname1=fname[0]
-        leng1=len(fname1)
-        e=0
-        for e in range(0,leng1):
-            name=fname1[e]
-            self.textEdit.append(name)
-            self.fileLoc.append(name)
-            #self.fileLoc1.append(name)
-            e=e+1
-
-
-        
-        
-        
-class Window(QDialog):
+class SmallWindow(QDialog):
     q=0
     finalDateDiff=list()
     finalDateTemp=list()
@@ -145,9 +85,10 @@ class Window(QDialog):
     finalTemp=list()
     
     def __init__(self, parent=None):
-        super(Window, self).__init__(parent)
+        super(SmallWindow, self).__init__(parent)
         
-        self.resize(1300,900)
+        self.resize(1000,600)
+        self.move(900,0)
         # a figure instance to plot on
         self.figure = plt.figure()
 
@@ -159,85 +100,51 @@ class Window(QDialog):
         # it takes the Canvas widget and a parent
         self.toolbar = NavigationToolbar(self.canvas, self)
 
-        self.menuBar = QMenuBar(self)
-        self.menuOpen = QMenu("File", self.menuBar)
-        self.actionOpen = QAction('Open', self)
-        self.actionOpen.triggered.connect(self.open_clicked)
-        self.actionQuit = QAction('Quit', self)
-        self.actionQuit.triggered.connect(self.close)
-        
-        self.menuOpen.addAction(self.actionOpen)
-        self.menuOpen.addAction(self.actionQuit)
-        self.menuBar.addAction(self.menuOpen.menuAction())
-        
-        # Just some button connected to `plot` method
-        self.button = QPushButton('Plot')
-        self.button.clicked.connect(self.plot1)
 
         # set the layout
         layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
-        layout.addWidget(self.button)
+       
         self.setLayout(layout)
+        
+        self.plot1()
 
-    
-    def open_clicked(self):
-        self.dialog_02 = OpenDialog()
-        self.dialog_02.show()
-        self.dialog_02.raise_()
-    
-    def writeFinal(self):
-        with open("finalDateDiffTemp.txt",'w',encoding = 'utf-8') as thefile:
-            for i in range(0,len(self.finalDateDiff)):
-                for j in range(0,len(self.finalDateTemp)):
-                    if self.finalDateDiff[i]==self.finalDateTemp[j]:
-                        thefile.write(str(self.finalDateDiff[i]))
-                        thefile.write(",")
-                        thefile.write(str(self.finalDiff[i]))
-                        thefile.write(",")
-                        thefile.write(str(self.finalTemp[j]))
-                        thefile.write("\n")
-        
-        return
-    
-    def openFinal(self):
-        self.dialog_03 = OpenFinalDialog()
-        self.dialog_03.show()
-        self.dialog_03.raise_()
-        
-        return
     
     def plot1(self):
         colors=['b','g','r','c','m','y','k']
         colLen=len(colors)
         #clear graphs
         #self.figure.clear()
-       
-        for i in range(0,len(OpenDialog.fileLoc)):
+        
+        for i in range(0,1):
             if self.q>=colLen-1:
                 self.q=0
                 #print(self.q)
             else:
                 self.q=self.q+1
                 #print(self.q)
-            file=OpenDialog.fileLoc[i]
-            
-            fileName=file.split('/')
-            fileName1=fileName[-1]
-            self.plot(file,colors[self.q],fileName1) 
+           
+            self.plot(colors[self.q]) 
             
     
-            i=i+1
+            
         
-        self.writeFinal()
-        self.openFinal()
         
-    def plot(self,name,color,label1):
+        #self.openFinal()
+        
+    def plot(self,color):
         y = []
         t = []
         
-        #name=OpenDialog.fileLoc[0]
+        import PressureProg
+        #BigWin=PressureProg.BigWindow()
+        t,y=PressureProg.BigWindow().getDiffArrays()
+        
+        
+        print(t)
+        print(y)
+        """
         readFile = open(name, 'r')
         sepFile = readFile.read().split('\n')
         readFile.close()
@@ -265,21 +172,17 @@ class Window(QDialog):
                     self.finalDateDiff.append(d1)
                     self.finalDiff.append(float(xAndY[1]))
         
-     
+        """
 
         ax = self.figure.add_subplot(111)
-        self.figure.autofmt_xdate(rotation=45)
-        ax.plot(t, y, color, label=label1)
-        ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M'))
+        #self.figure.autofmt_xdate(rotation=45)
+        ax.plot(t, y, color)
+        #ax.xaxis.set_major_formatter(mdates.DateFormatter('%d/%m/%Y %H:%M'))
         # refresh canvas
         self.canvas.draw()
         
         
-
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-
-    main = Window()
-    main.show()
-
-    sys.exit(app.exec_())
+    def openFinal(self):
+        self.dialog_03 = OpenFinalDialog()
+        self.dialog_03.show()
+        self.dialog_03.raise_()
